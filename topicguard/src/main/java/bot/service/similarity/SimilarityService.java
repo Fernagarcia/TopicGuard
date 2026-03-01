@@ -31,7 +31,6 @@ public class SimilarityService {
         SimilarityResult best = null;
 
         for (ThreadChannel thread : threads) {
-
             String threadName = thread.getName();
             double score = engine.similarity(nombre, threadName);
 
@@ -58,7 +57,6 @@ public class SimilarityService {
     }
 
     private MatchType classify(double score) {
-
         if (score >= exactThreshold) {
             return MatchType.EXACT;
         }

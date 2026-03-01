@@ -33,7 +33,6 @@ public class BotConfig {
 
         jda.awaitReady();
 
-        // 🔹 Instanciamos dependencias
         TemplateService templateService = new TemplateService();
         SimilarityEngine engine = new LevenshteinEngine();
         SimilarityService similarityService = new SimilarityService(engine, 0.95, 0.8);
@@ -45,7 +44,6 @@ public class BotConfig {
                         decisionService,
                         metricsService);
 
-        // 🔹 Registramos el listener
         jda.addEventListener(
                 new MessageListener(threadService, decisionService)
         );

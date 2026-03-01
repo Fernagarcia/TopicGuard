@@ -11,8 +11,6 @@ public class MetricsService {
     private final AtomicLong confirmationAccepted = new AtomicLong();
     private final AtomicLong confirmationRejected = new AtomicLong();
 
-    // 🔹 Incrementadores
-
     public void incrementMessagesProcessed() {
         messagesProcessed.incrementAndGet();
     }
@@ -36,8 +34,6 @@ public class MetricsService {
     public void incrementConfirmationRejected() {
         confirmationRejected.incrementAndGet();
     }
-
-    // 🔹 Getters
 
     public long getMessagesProcessed() {
         return messagesProcessed.get();

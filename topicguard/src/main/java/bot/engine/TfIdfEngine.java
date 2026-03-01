@@ -12,7 +12,6 @@ public class TfIdfEngine implements SimilarityEngine {
 
     @Override
     public double similarity(String a, String b) {
-
         List<String> corpus = List.of(a, b);
 
         Map<String, Double> v1 = tfidf(a, corpus);
@@ -22,7 +21,6 @@ public class TfIdfEngine implements SimilarityEngine {
     }
 
     private Map<String, Double> tfidf(String doc, List<String> corpus) {
-
         List<String> tokens = tokenize(doc);
 
         Map<String, Double> tf = new HashMap<>();
@@ -51,7 +49,6 @@ public class TfIdfEngine implements SimilarityEngine {
     }
 
     private double cosine(Map<String, Double> v1, Map<String, Double> v2) {
-
         Set<String> allTerms = new HashSet<>();
         allTerms.addAll(v1.keySet());
         allTerms.addAll(v2.keySet());
@@ -74,7 +71,6 @@ public class TfIdfEngine implements SimilarityEngine {
     }
 
     private List<String> tokenize(String text) {
-
         return Arrays.stream(
                         text.toLowerCase()
                                 .replaceAll("[^a-z0-9áéíóúñ ]", "")

@@ -9,7 +9,6 @@ import java.util.regex.Pattern;
 public class TemplateService {
 
     public TemplateMatch validarMensaje(TextChannel channel, String mensaje) {
-
         String topic = channel.getTopic();
 
         if (topic == null || !topic.startsWith("TEMPLATE:"))
@@ -21,11 +20,6 @@ public class TemplateService {
         // Extraer template
         String plantilla = topic.replaceFirst("TEMPLATE:", "").trim();
 
-        /*
-         * Esperamos formato tipo:
-         * !comando {slug}
-         */
-
         Pattern templatePattern = Pattern.compile("!(\\w+)\\s+\\{([^}]+)}");
         Matcher templateMatcher = templatePattern.matcher(plantilla);
 
@@ -34,7 +28,6 @@ public class TemplateService {
 
         String comando = templateMatcher.group(1);
 
-        // Construimos regex dinámica basada en el comando
         Pattern mensajePattern = Pattern.compile(
                 "^!" + Pattern.quote(comando) + "\\s+([a-zA-Z0-9-]+)",
                 Pattern.CASE_INSENSITIVE

@@ -58,7 +58,6 @@ public class ThreadService {
                 );
 
         if (matchResult.isPresent()) {
-
             SimilarityResult result = matchResult.get();
 
             switch (result.type()) {
@@ -128,7 +127,6 @@ public class ThreadService {
     }
 
     public void handleStatsCommand(SlashCommandInteractionEvent event) {
-
         if (!esAdmin(event)) {
             event.reply("No tenés permisos para usar este comando.")
                     .setEphemeral(true)

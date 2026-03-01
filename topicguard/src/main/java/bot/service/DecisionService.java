@@ -64,7 +64,6 @@ public class DecisionService {
     }
 
     public void handleReaction(MessageReactionAddEvent event) {
-
         if (event.getUser() == null || event.getUser().isBot()) return;
 
         PendingDecision decision =
