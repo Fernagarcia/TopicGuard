@@ -8,7 +8,9 @@ import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ThreadService {
 
@@ -16,6 +18,12 @@ public class ThreadService {
     private final SimilarityService similarityService;
     private final DecisionService decisionService;
     private final MetricsService metricsService;
+
+    // 🔒 Anti-spam
+    private final Map<Long, Long> lastCreation = new ConcurrentHashMap<>();
+    private final Map<Long, String> lastSlug = new ConcurrentHashMap<>();
+
+    private static final long COOLDOWN_MS = 360_000; // 5 minutos
 
     public ThreadService(TemplateService templateService,
                          SimilarityService similarityService,
@@ -28,6 +36,7 @@ public class ThreadService {
     }
 
     public void handleMessage(MessageReceivedEvent event) {
+
         metricsService.incrementMessagesProcessed();
 
         if (event.getAuthor().isBot()) return;
@@ -39,17 +48,31 @@ public class ThreadService {
         if (resultado == null) return;
 
         if (!resultado.valido()) {
-            event.getMessage().delete().queue();
-            channel.sendMessage(
-                    event.getAuthor().getAsMention() +
-                            " Formato incorrecto."
-            ).queue();
+            avisarYBorrar(event, "Formato incorrecto.");
             return;
         }
 
         String slug = resultado.valores().get("slug");
         String nombreThread = normalizar(slug);
         String contenido = limpiarContenido(mensaje, slug);
+
+        long userId = event.getAuthor().getIdLong();
+
+        // Protección contra repetición inmediata
+        String ultimoSlug = lastSlug.get(userId);
+        if (nombreThread.equals(ultimoSlug)) {
+            avisarYBorrar(event, "Ya enviaste ese mismo hilo recientemente.");
+            return;
+        }
+
+        // Cooldown por usuario
+        long now = System.currentTimeMillis();
+        Long lastTime = lastCreation.get(userId);
+
+        if (lastTime != null && now - lastTime < COOLDOWN_MS) {
+            avisarYBorrar(event, "Tienes que esperar 5 minutos antes de crear otro hilo.");
+            return;
+        }
 
         Optional<SimilarityResult> matchResult =
                 similarityService.findBestMatch(
@@ -65,6 +88,7 @@ public class ThreadService {
                 case EXACT -> {
                     redirigirDirecto(event, result.thread(), contenido);
                     metricsService.incrementRedirectedExact();
+                    lastSlug.put(userId, nombreThread);
                     return;
                 }
 
@@ -81,13 +105,16 @@ public class ThreadService {
                 }
 
                 case NONE -> {
-                    // no hacemos nada, sigue flujo normal
                 }
             }
         }
 
         crearNuevoThread(event, nombreThread, contenido);
         metricsService.incrementThreadsCreated();
+
+        // Guardamos control anti-spam
+        lastCreation.put(userId, now);
+        lastSlug.put(userId, nombreThread);
     }
 
     private void redirigirDirecto(MessageReceivedEvent event,
@@ -117,6 +144,26 @@ public class ThreadService {
                 });
     }
 
+    private void avisarYBorrar(MessageReceivedEvent event, String mensaje) {
+
+        event.getChannel()
+                .sendMessage(event.getAuthor().getAsMention() + " " + mensaje)
+                .queue(msg ->
+                        msg.delete().queueAfter(5, java.util.concurrent.TimeUnit.SECONDS)
+                );
+
+        event.getMessage().delete().queue();
+    }
+
+    private boolean slugValido(String slug) {
+
+        if (slug.length() < 4) return false;
+        if (slug.matches("\\d+")) return false;
+        if (slug.matches("(.)\\1{3,}")) return false;
+
+        return true;
+    }
+
     private String limpiarContenido(String mensaje, String slug) {
         return mensaje.replaceFirst("^!\\w+\\s+" + slug, "").trim();
     }
@@ -126,7 +173,10 @@ public class ThreadService {
                 .replaceAll("[^a-z0-9-]", "-");
     }
 
+    // ---------------- STATS ----------------
+
     public void handleStatsCommand(SlashCommandInteractionEvent event) {
+
         if (!esAdmin(event)) {
             event.reply("No tenés permisos para usar este comando.")
                     .setEphemeral(true)
@@ -155,7 +205,7 @@ public class ThreadService {
         );
 
         event.reply(mensaje)
-                .setEphemeral(true) // solo lo ve el admin
+                .setEphemeral(true)
                 .queue();
     }
 
