@@ -38,9 +38,10 @@ public class TemplateService {
             );
         }
 
-        // Extraemos slug
-        String[] partes = mensaje.split(" ", 2);
-        if (partes.length < 2 || partes[1].isBlank()) {
+        // Eliminamos el comando
+        String resto = mensaje.substring(comandoEsperado.length()).trim();
+
+        if (resto.isBlank()) {
             return new ValidationResult(
                     false,
                     null,
@@ -49,7 +50,20 @@ public class TemplateService {
             );
         }
 
-        String slug = partes[1].trim();
+        // 🔹 Extraemos solo hasta el primer espacio
+        String[] partes = resto.split("\\s+", 2);
+
+        String slug = partes[0];
+
+        // Validación básica del slug
+        if (!slug.matches("[a-zA-Z0-9-]{3,}")) {
+            return new ValidationResult(
+                    false,
+                    null,
+                    template,
+                    example
+            );
+        }
 
         Map<String, String> valores = new HashMap<>();
         valores.put("slug", slug);
