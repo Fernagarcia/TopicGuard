@@ -2,13 +2,10 @@ package bot.config;
 
 import bot.engine.LevenshteinEngine;
 import bot.engine.SimilarityEngine;
-import bot.engine.TfIdfEngine;
 import bot.listener.MessageListener;
-import bot.service.DecisionService;
-import bot.service.MetricsService;
+import bot.orchestrator.MessageOrchestrator;
+import bot.service.*;
 import bot.service.similarity.SimilarityService;
-import bot.service.TemplateService;
-import bot.service.ThreadService;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
@@ -17,6 +14,7 @@ import net.dv8tion.jda.api.requests.GatewayIntent;
 public class BotConfig {
 
     public static void start() throws Exception {
+
         String token = System.getenv("DISCORD_TOKEN");
 
         if (token == null || token.isBlank()) {
@@ -33,21 +31,39 @@ public class BotConfig {
 
         jda.awaitReady();
 
-        TemplateService templateService = new TemplateService();
+        // ---------- Core Engines ----------
         SimilarityEngine engine = new LevenshteinEngine();
-        SimilarityService similarityService = new SimilarityService(engine, 0.95, 0.8);
+        SimilarityService similarityService =
+                new SimilarityService(engine, 0.95, 0.8);
+
+        // ---------- Services ----------
+        TemplateService templateService = new TemplateService();
         MetricsService metricsService = new MetricsService();
         DecisionService decisionService = new DecisionService(metricsService);
+        SpamService spamService = new SpamService();
+        FeedbackService feedbackService = new FeedbackService();
+
         ThreadService threadService =
-                new ThreadService(templateService,
+                new ThreadService(
                         similarityService,
                         decisionService,
-                        metricsService);
+                        metricsService
+                );
 
+        MessageOrchestrator orchestrator =
+                new MessageOrchestrator(
+                        templateService,
+                        spamService,
+                        feedbackService,
+                        threadService
+                );
+
+        // ---------- Listener ----------
         jda.addEventListener(
-                new MessageListener(threadService, decisionService)
+                new MessageListener(orchestrator, decisionService)
         );
 
+        // ---------- Slash Commands ----------
         jda.updateCommands().addCommands(
                 Commands.slash("stats", "Muestra métricas del bot")
         ).queue();

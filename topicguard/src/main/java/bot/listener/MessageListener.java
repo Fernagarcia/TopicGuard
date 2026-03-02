@@ -1,39 +1,29 @@
 package bot.listener;
 
 import bot.service.DecisionService;
-import bot.service.ThreadService;
-import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import bot.orchestrator.MessageOrchestrator;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 
-
 public class MessageListener extends ListenerAdapter {
 
-    private final ThreadService threadService;
+    private final MessageOrchestrator orchestrator;
     private final DecisionService decisionService;
 
-    public MessageListener(ThreadService threadService,
+    public MessageListener(MessageOrchestrator orchestrator,
                            DecisionService decisionService) {
-        this.threadService = threadService;
+        this.orchestrator = orchestrator;
         this.decisionService = decisionService;
     }
 
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
-        threadService.handleMessage(event);
+        orchestrator.process(event);
     }
 
     @Override
     public void onMessageReactionAdd(MessageReactionAddEvent event) {
         decisionService.handleReaction(event);
-    }
-
-    @Override
-    public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
-
-        if (!event.getName().equals("stats")) return;
-
-        threadService.handleStatsCommand(event);
     }
 }

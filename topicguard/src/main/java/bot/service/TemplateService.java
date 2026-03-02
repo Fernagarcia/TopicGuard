@@ -2,59 +2,75 @@ package bot.service;
 
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TemplateService {
 
-    public TemplateMatch validarMensaje(TextChannel channel, String mensaje) {
+    public record ValidationResult(boolean valido,
+                                   Map<String, String> valores,
+                                   String template,
+                                   String example) {}
+
+    public ValidationResult validarMensaje(TextChannel channel, String mensaje) {
+
         String topic = channel.getTopic();
 
-        if (topic == null || !topic.startsWith("TEMPLATE:"))
+        if (topic == null) {
             return null;
+        }
 
-        if (mensaje == null || mensaje.isBlank())
-            return TemplateMatch.invalid();
+        String template = extraerValor(topic, "TEMPLATE:");
+        String example = extraerValor(topic, "EXAMPLE:");
 
-        // Extraer template
-        String plantilla = topic.replaceFirst("TEMPLATE:", "").trim();
+        if (template == null) {
+            return null;
+        }
 
-        Pattern templatePattern = Pattern.compile("!(\\w+)\\s+\\{([^}]+)}");
-        Matcher templateMatcher = templatePattern.matcher(plantilla);
+        String comandoEsperado = template.split(" ")[0]; // !final
 
-        if (!templateMatcher.find())
-            return TemplateMatch.invalid();
+        if (!mensaje.startsWith(comandoEsperado + " ")) {
+            return new ValidationResult(
+                    false,
+                    null,
+                    template,
+                    example
+            );
+        }
 
-        String comando = templateMatcher.group(1);
+        // Extraemos slug
+        String[] partes = mensaje.split(" ", 2);
+        if (partes.length < 2 || partes[1].isBlank()) {
+            return new ValidationResult(
+                    false,
+                    null,
+                    template,
+                    example
+            );
+        }
 
-        Pattern mensajePattern = Pattern.compile(
-                "^!" + Pattern.quote(comando) + "\\s+([a-zA-Z0-9-]+)",
-                Pattern.CASE_INSENSITIVE
-        );
+        String slug = partes[1].trim();
 
-        Matcher mensajeMatcher = mensajePattern.matcher(mensaje.trim());
-
-        if (!mensajeMatcher.find())
-            return TemplateMatch.invalid();
-
-        String slug = mensajeMatcher.group(1);
-
-        Map<String, String> valores = new LinkedHashMap<>();
+        Map<String, String> valores = new HashMap<>();
         valores.put("slug", slug);
 
-        return TemplateMatch.valid(valores);
+        return new ValidationResult(
+                true,
+                valores,
+                template,
+                example
+        );
     }
 
-    public record TemplateMatch(boolean valido,
-                                Map<String, String> valores) {
+    private String extraerValor(String topic, String clave) {
 
-        public static TemplateMatch valid(Map<String, String> valores) {
-            return new TemplateMatch(true, valores);
+        for (String linea : topic.split("\n")) {
+            String limpia = linea.trim();
+            if (limpia.toUpperCase().startsWith(clave)) {
+                return limpia.substring(clave.length()).trim();
+            }
         }
 
-        public static TemplateMatch invalid() {
-            return new TemplateMatch(false, null);
-        }
+        return null;
     }
 }
