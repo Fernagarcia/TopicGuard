@@ -6,6 +6,7 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
+import java.util.List;
 import java.util.Optional;
 
 public class ThreadService {
@@ -31,19 +32,18 @@ public class ThreadService {
 
         String nombreThread = normalizar(slug);
 
-        Optional<SimilarityResult> matchResult =
-                similarityService.findBestMatch(
-                        nombreThread,
-                        channel.getThreadChannels()
-                );
+        List<SimilarityResult> matches = similarityService.findMatches(
+                nombreThread,
+                channel.getThreadChannels()
+        );
 
-        if (matchResult.isPresent()) {
-            SimilarityResult result = matchResult.get();
+        if (!matches.isEmpty()) {
+            SimilarityResult best = matches.get(0);
 
-            switch (result.type()) {
+            switch (best.type()) {
 
                 case EXACT -> {
-                    redirigirDirecto(event, result.thread(), contenido);
+                    redirigirDirecto(event, best.thread(), contenido);
                     metricsService.incrementRedirectedExact();
                     return;
                 }
@@ -54,13 +54,13 @@ public class ThreadService {
                             channel,
                             nombreThread,
                             contenido,
-                            result.thread()
+                            best.thread()
                     );
                     metricsService.incrementConfirmationRequested();
                     return;
                 }
 
-                case NONE -> { }
+                case NONE -> {}
             }
         }
 

@@ -1,14 +1,19 @@
 package bot.config;
 
-import bot.engine.LevenshteinEngine;
-import bot.engine.SimilarityEngine;
+import bot.command.ConfigCommand;
+import bot.engine.*;
 import bot.listener.MessageListener;
+import bot.listener.ThreadLifecycleListener;
+import bot.orchestrator.ForumPostOrchestrator;
 import bot.orchestrator.MessageOrchestrator;
+import bot.repository.ServerSettingsRepository;
 import bot.service.*;
 import bot.service.similarity.SimilarityService;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
+import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 
 public class BotConfig {
@@ -32,16 +37,31 @@ public class BotConfig {
         jda.awaitReady();
 
         // ---------- Core Engines ----------
-        SimilarityEngine engine = new LevenshteinEngine();
-        SimilarityService similarityService =
-                new SimilarityService(engine, 0.95, 0.8);
+        SimilarityEngine levenshtein = new LevenshteinEngine();
+        SimilarityEngine jaccard = new JaccardEngine();
+        SimilarityEngine containment = new ContainmentEngine();
+
+        SimilarityEngine hybridEngine =
+                new HybridSimilarityEngine(
+                        levenshtein,
+                        jaccard,
+                        containment
+                );
+
+        SimilarityService similarityService = new SimilarityService(
+                hybridEngine,
+                0.92,  // exactThreshold
+                0.65   // similarThreshold
+        );
 
         // ---------- Services ----------
         TemplateService templateService = new TemplateService();
         MetricsService metricsService = new MetricsService();
         DecisionService decisionService = new DecisionService(metricsService);
-        SpamService spamService = new SpamService();
         FeedbackService feedbackService = new FeedbackService();
+        ServerSettingsRepository settingsRepository = new ServerSettingsRepository();
+        ServerSettingsService settingsService = new ServerSettingsService(settingsRepository);
+        SpamService spamService = new SpamService(settingsService);
 
         ThreadService threadService =
                 new ThreadService(
@@ -49,6 +69,20 @@ public class BotConfig {
                         decisionService,
                         metricsService
                 );
+
+        ThreadIndexService threadIndexService = new ThreadIndexService();
+
+        ForumDuplicateService duplicateService =
+                new ForumDuplicateService();
+
+        ForumPostOrchestrator forumPostOrchestrator = new ForumPostOrchestrator(
+                similarityService,
+                duplicateService,
+                metricsService,
+                spamService,
+                feedbackService,
+                threadIndexService
+        );
 
         MessageOrchestrator orchestrator =
                 new MessageOrchestrator(
@@ -58,15 +92,33 @@ public class BotConfig {
                         threadService
                 );
 
+        // ---------- Commands ----------
+        ConfigCommand configCommand = new ConfigCommand(settingsService);
+
         // ---------- Listener ----------
+
         jda.addEventListener(
-                new MessageListener(orchestrator, decisionService)
+                new MessageListener(orchestrator, decisionService, forumPostOrchestrator),
+                configCommand,
+                new ThreadLifecycleListener(threadIndexService)
         );
 
         // ---------- Slash Commands ----------
         jda.updateCommands().addCommands(
-                Commands.slash("stats", "Muestra métricas del bot")
+                Commands.slash("stats", "Muestra métricas del bot"),
+                Commands.slash("config", "Configuración del bot")
+                        .addSubcommands(
+                                new SubcommandData("cooldown", "Tiempo mínimo entre publicaciones")
+                                        .addOption(OptionType.INTEGER, "segundos", "Cooldown en segundos", true)
+                        )
         ).queue();
+
+        // Poblar índice con threads existentes
+        jda.getGuilds().forEach(guild ->
+                guild.getForumChannels().forEach(forum ->
+                        forum.getThreadChannels().forEach(threadIndexService::indexThread)
+                )
+        );
 
         System.out.println("Bot conectado correctamente.");
     }

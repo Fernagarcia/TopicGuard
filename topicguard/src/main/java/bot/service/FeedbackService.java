@@ -1,5 +1,6 @@
 package bot.service;
 
+import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 
 import java.util.concurrent.TimeUnit;
@@ -41,5 +42,13 @@ public class FeedbackService {
                 );
 
         event.getMessage().delete().queue();
+    }
+
+    public void mostrarCooldownEnForo(ThreadChannel thread) {
+        thread.sendMessage("⏳ Estás creando publicaciones muy seguido. Esperá un momento antes de crear otra.")
+                .queue(msg -> thread.getManager()
+                        .setArchived(true)
+                        .setLocked(true)
+                        .queueAfter(30, TimeUnit.SECONDS));
     }
 }
