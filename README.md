@@ -6,6 +6,12 @@ El proyecto nació como una solución práctica para un servidor educativo de la
 
 ---
 
+## 🎓 Origen del proyecto
+
+TopicGuard comenzó como una herramienta interna para mejorar la organización de un Discord educativo de la UTN. El objetivo principal es facilitar el intercambio de conocimiento y mantener el orden en comunidades técnicas.
+
+---
+
 ## 📦 Estructura del proyecto
 
 TopicGuard está dividido en módulos Maven independientes:
@@ -144,8 +150,3 @@ TopicGuard registra internamente:
 - [ ] Reply Bot: respuestas automáticas con NLP (Parte 2)
 - [ ] Migración a SQLite para múltiples servidores
 
----
-
-## 🎓 Origen del proyecto
-
-TopicGuard comenzó como una herramienta interna para mejorar la organización de un Discord educativo de la UTN. El objetivo principal es facilitar el intercambio de conocimiento y mantener el orden en comunidades técnicas.
