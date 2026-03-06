@@ -6,7 +6,9 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="TopicGuard" />
+        <module name="reply-bot" />
+        <module name="common" />
+        <module name="forum-bot" />
       </profile>
     </annotationProcessing>
   </component>
