@@ -5,10 +5,18 @@ import bot.service.similarity.SimilarityResult;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class ForumDuplicateService {
 
     private static final int MAX_SUGERENCIAS = 5;
+    private final DecisionService decisionService;
+    private final LogService logService;
+
+    public ForumDuplicateService(DecisionService decisionService, LogService logService) {
+        this.decisionService = decisionService;
+        this.logService = logService;
+    }
 
     public void handleDuplicates(ThreadChannel nuevo, List<SimilarityResult> resultados) {
 
@@ -21,13 +29,13 @@ public class ForumDuplicateService {
                 .toList();
 
         if (!exactos.isEmpty()) {
-            sugerirExactos(nuevo, exactos);
+            cerrarConRedireccion(nuevo, exactos);
         } else if (!similares.isEmpty()) {
-            sugerirSimilares(nuevo, similares);
+            decisionService.solicitarConfirmacionEnForo(nuevo, similares);
         }
     }
 
-    private void sugerirExactos(ThreadChannel nuevo, List<SimilarityResult> exactos) {
+    private void cerrarConRedireccion(ThreadChannel nuevo, List<SimilarityResult> exactos) {
         StringBuilder sb = new StringBuilder();
         sb.append("👋 Este tema ya existe:\n\n");
 
@@ -35,21 +43,16 @@ public class ForumDuplicateService {
                 .limit(MAX_SUGERENCIAS)
                 .forEach(r -> sb.append("• ").append(r.thread().getJumpUrl()).append("\n"));
 
-        sb.append("\nTe recomendamos continuar la conversación ahí.");
+        sb.append("\nContinuá la conversación ahí. Este foro se cerrará en 30 segundos.");
 
-        nuevo.sendMessage(sb.toString()).queue();
-    }
+        nuevo.sendMessage(sb.toString())
+                .queue(msg -> {
+                    nuevo.getManager()
+                            .setArchived(true)
+                            .setLocked(true)
+                            .queueAfter(30, TimeUnit.SECONDS);
 
-    private void sugerirSimilares(ThreadChannel nuevo, List<SimilarityResult> similares) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("🤔 Encontramos temas similares al tuyo:\n\n");
-
-        similares.stream()
-                .limit(MAX_SUGERENCIAS)
-                .forEach(r -> sb.append("• ").append(r.thread().getJumpUrl()).append("\n"));
-
-        sb.append("\nSi tu duda es distinta, podés ignorar este mensaje.");
-
-        nuevo.sendMessage(sb.toString()).queue();
+                    logService.logForumClosedExact(nuevo); // log aquí
+                });
     }
 }

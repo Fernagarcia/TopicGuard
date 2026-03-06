@@ -31,6 +31,7 @@ public class ConfigCommand extends ListenerAdapter {
 
         switch (subcommand) {
             case "cooldown" -> handleCooldown(event);
+            case "logchannel" -> handleLogChannel(event);
             // Futuros subcomandos se agregan aquí
         }
     }
@@ -52,6 +53,20 @@ public class ConfigCommand extends ListenerAdapter {
         settingsService.setCooldown(serverId, segundos * 1000);
 
         event.reply("✅ Cooldown actualizado a **%d segundos**.".formatted(segundos))
+                .setEphemeral(true)
+                .queue();
+    }
+
+    private void handleLogChannel(SlashCommandInteractionEvent event) {
+        OptionMapping option = event.getOption("canal");
+        if (option == null) return;
+
+        long channelId = option.getAsChannel().getIdLong();
+        long serverId = event.getGuild().getIdLong();
+
+        settingsService.setLogChannel(serverId, channelId);
+
+        event.reply("✅ Canal de logs configurado: <#%d>".formatted(channelId))
                 .setEphemeral(true)
                 .queue();
     }

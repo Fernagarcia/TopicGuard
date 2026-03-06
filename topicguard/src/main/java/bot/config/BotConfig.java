@@ -55,12 +55,14 @@ public class BotConfig {
         );
 
         // ---------- Services ----------
-        TemplateService templateService = new TemplateService();
-        MetricsService metricsService = new MetricsService();
-        DecisionService decisionService = new DecisionService(metricsService);
-        FeedbackService feedbackService = new FeedbackService();
         ServerSettingsRepository settingsRepository = new ServerSettingsRepository();
         ServerSettingsService settingsService = new ServerSettingsService(settingsRepository);
+        TemplateService templateService = new TemplateService();
+        MetricsService metricsService = new MetricsService();
+        LogService logService = new LogService(jda, settingsService);
+        DecisionService decisionService = new DecisionService(metricsService, logService);
+        FeedbackService feedbackService = new FeedbackService();
+
         SpamService spamService = new SpamService(settingsService);
 
         ThreadService threadService =
@@ -72,8 +74,7 @@ public class BotConfig {
 
         ThreadIndexService threadIndexService = new ThreadIndexService();
 
-        ForumDuplicateService duplicateService =
-                new ForumDuplicateService();
+        ForumDuplicateService duplicateService = new ForumDuplicateService(decisionService, logService);
 
         ForumPostOrchestrator forumPostOrchestrator = new ForumPostOrchestrator(
                 similarityService,
@@ -81,7 +82,8 @@ public class BotConfig {
                 metricsService,
                 spamService,
                 feedbackService,
-                threadIndexService
+                threadIndexService,
+                logService  // nuevo
         );
 
         MessageOrchestrator orchestrator =
@@ -109,7 +111,9 @@ public class BotConfig {
                 Commands.slash("config", "Configuración del bot")
                         .addSubcommands(
                                 new SubcommandData("cooldown", "Tiempo mínimo entre publicaciones")
-                                        .addOption(OptionType.INTEGER, "segundos", "Cooldown en segundos", true)
+                                        .addOption(OptionType.INTEGER, "segundos", "Cooldown en segundos", true),
+                                new SubcommandData("logchannel", "Canal donde se registran los nuevos foros")
+                                        .addOption(OptionType.CHANNEL, "canal", "Canal de texto", true)
                         )
         ).queue();
 

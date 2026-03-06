@@ -4,6 +4,7 @@ import bot.repository.ServerSettingsRepository;
 import bot.server.ServerSettings;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ServerSettingsService {
@@ -27,5 +28,14 @@ public class ServerSettingsService {
     public void setCooldown(long serverId, long cooldownMs) {
         getOrCreate(serverId).setThreadCooldownMs(cooldownMs);
         repository.saveAll(settings); // persiste inmediatamente
+    }
+
+    public void setLogChannel(long serverId, long channelId) {
+        getOrCreate(serverId).setLogChannelId(channelId);
+        repository.saveAll(settings);
+    }
+
+    public Optional<Long> getLogChannelId(long serverId) {
+        return getOrCreate(serverId).getLogChannelId();
     }
 }

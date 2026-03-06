@@ -1,4 +1,5 @@
 [ {
   "serverId" : 1477713924768927776,
-  "cooldownMs" : 200000
+  "cooldownMs" : 200000,
+  "logChannelId" : 1479462333209247785
 } ]

@@ -1,6 +1,7 @@
 package bot.orchestrator;
 
 import bot.service.*;
+import bot.service.similarity.MatchType;
 import bot.service.similarity.SimilarityResult;
 import bot.service.similarity.SimilarityService;
 import net.dv8tion.jda.api.entities.channel.concrete.ForumChannel;
@@ -16,19 +17,21 @@ public class ForumPostOrchestrator {
     private final SpamService spamService;
     private final FeedbackService feedbackService;
     private final ThreadIndexService threadIndexService;
+    private final LogService logService;
 
     public ForumPostOrchestrator(SimilarityService similarityService,
                                  ForumDuplicateService duplicateService,
                                  MetricsService metricsService,
                                  SpamService spamService,
                                  FeedbackService feedbackService,
-                                 ThreadIndexService threadIndexService) {
+                                 ThreadIndexService threadIndexService, LogService logService) {
         this.similarityService = similarityService;
         this.duplicateService = duplicateService;
         this.metricsService = metricsService;
         this.spamService = spamService;
         this.feedbackService = feedbackService;
         this.threadIndexService = threadIndexService;
+        this.logService = logService;
     }
 
     public void processNewPost(ThreadChannel thread) {
@@ -56,10 +59,23 @@ public class ForumPostOrchestrator {
         );
 
         if (!matches.isEmpty()) {
+
             duplicateService.handleDuplicates(thread, matches);
-            metricsService.incrementConfirmationRequested();
+
+            boolean soloExactos = matches.stream()
+                    .allMatch(r -> r.type() == MatchType.EXACT);
+
+            if (soloExactos) {
+                logService.logForumCreated(thread); // solo el log de creación
+                metricsService.incrementConfirmationRequested();
+            } else {
+                logService.logForumCreated(thread);
+                metricsService.incrementThreadsCreated();
+            }
+
         } else {
             threadIndexService.indexThread(thread);
+            logService.logForumCreated(thread);
             metricsService.incrementThreadsCreated();
         }
     }

@@ -25,6 +25,7 @@ public class ServerSettingsRepository {
             for (ServerSettingsData d : data) {
                 ServerSettings s = new ServerSettings(d.serverId);
                 s.setThreadCooldownMs(d.cooldownMs);
+                s.setLogChannelId(d.logChannelId); // nuevo
                 result.put(d.serverId, s);
             }
 
@@ -38,27 +39,35 @@ public class ServerSettingsRepository {
 
     public void saveAll(Map<Long, ServerSettings> settings) {
         try {
+            File file = new File(FILE_PATH);
+            file.getParentFile().mkdirs();
+
             ServerSettingsData[] data = settings.values().stream()
-                    .map(s -> new ServerSettingsData(s.getServerId(), s.getThreadCooldownMs()))
+                    .map(s -> new ServerSettingsData(
+                            s.getServerId(),
+                            s.getThreadCooldownMs(),
+                            s.getLogChannelId().orElse(null) // nuevo
+                    ))
                     .toArray(ServerSettingsData[]::new);
 
-            mapper.writerWithDefaultPrettyPrinter().writeValue(new File(FILE_PATH), data);
+            mapper.writerWithDefaultPrettyPrinter().writeValue(file, data);
 
         } catch (IOException e) {
             System.err.println("Error guardando configuración: " + e.getMessage());
         }
     }
 
-    // DTO interno para serialización
     public static class ServerSettingsData {
         public long serverId;
         public long cooldownMs;
+        public Long logChannelId;
 
         public ServerSettingsData() {}
 
-        public ServerSettingsData(long serverId, long cooldownMs) {
+        public ServerSettingsData(long serverId, long cooldownMs, Long logChannelId) {
             this.serverId = serverId;
             this.cooldownMs = cooldownMs;
+            this.logChannelId = logChannelId;
         }
     }
 }
