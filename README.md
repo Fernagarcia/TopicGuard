@@ -1,14 +1,10 @@
 # 🛡️ TopicGuard
 
-TopicGuard es un bot de Discord desarrollado para mantener comunidades organizadas, evitando la duplicación de consultas y automatizando la gestión de foros y canales.
+TopicGuard es un bot de Discord diseñado para mantener comunidades organizadas, evitando la duplicación de consultas y automatizando la gestión de foros y canales.
 
-El proyecto nació como una solución práctica para un servidor educativo de la UTN, pero está diseñado para ser usado en cualquier comunidad técnica.
+Utiliza técnicas de análisis de texto para detectar publicaciones similares y redirigir a los usuarios hacia discusiones ya existentes, reduciendo el ruido y mejorando el acceso a la información dentro del servidor.
 
----
-
-## 🎓 Origen del proyecto
-
-TopicGuard comenzó como una herramienta interna para mejorar la organización de un Discord educativo de la UTN. El objetivo principal es facilitar el intercambio de conocimiento y mantener el orden en comunidades técnicas.
+El proyecto nació como una solución práctica para un servidor educativo de la UTN, con el objetivo de facilitar el intercambio de conocimiento y mantener la estructura de las conversaciones.
 
 ---
 
