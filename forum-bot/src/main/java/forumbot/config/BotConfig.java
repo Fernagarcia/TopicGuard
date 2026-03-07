@@ -10,6 +10,7 @@ import forumbot.orchestrator.MessageOrchestrator;
 import forumbot.repository.ServerSettingsRepository;
 import forumbot.service.*;
 import forumbot.service.similarity.SimilarityService;
+import io.github.cdimascio.dotenv.Dotenv;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -20,8 +21,13 @@ import net.dv8tion.jda.api.requests.GatewayIntent;
 public class BotConfig {
 
     public static void start(){
+        Dotenv dotenv = Dotenv.configure()
+                .directory("config.env")
+                .ignoreIfMalformed()
+                .ignoreIfMissing()
+                .load();
 
-        String token = System.getenv("DISCORD_TOKEN");
+        String token = dotenv.get("DISCORD_TOKEN");
 
         if (token == null || token.isBlank()) {
             throw new IllegalStateException("DISCORD_TOKEN no configurado");
