@@ -25,7 +25,8 @@ public class ServerSettingsRepository {
             for (ServerSettingsData d : data) {
                 ServerSettings s = new ServerSettings(d.serverId);
                 s.setThreadCooldownMs(d.cooldownMs);
-                s.setLogChannelId(d.logChannelId); // nuevo
+                s.setLogChannelId(d.logChannelId);
+                s.setDefaultTagId(d.defaultTagId); // nuevo
                 result.put(d.serverId, s);
             }
 
@@ -48,7 +49,8 @@ public class ServerSettingsRepository {
                     .map(s -> new ServerSettingsData(
                             s.getServerId(),
                             s.getThreadCooldownMs(),
-                            s.getLogChannelId().orElse(null)
+                            s.getLogChannelId().orElse(null),
+                            s.getDefaultTagId().orElse(null) // nuevo
                     ))
                     .toArray(ServerSettingsData[]::new);
 
@@ -64,13 +66,16 @@ public class ServerSettingsRepository {
         public long serverId;
         public long cooldownMs;
         public Long logChannelId;
+        public Long defaultTagId; // nuevo
 
         public ServerSettingsData() {}
 
-        public ServerSettingsData(long serverId, long cooldownMs, Long logChannelId) {
+        public ServerSettingsData(long serverId, long cooldownMs,
+                                  Long logChannelId, Long defaultTagId) {
             this.serverId = serverId;
             this.cooldownMs = cooldownMs;
             this.logChannelId = logChannelId;
+            this.defaultTagId = defaultTagId;
         }
     }
 }

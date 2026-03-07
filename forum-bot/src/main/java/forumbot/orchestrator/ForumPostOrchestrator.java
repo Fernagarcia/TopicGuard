@@ -19,13 +19,18 @@ public class ForumPostOrchestrator {
     private final FeedbackService feedbackService;
     private final ThreadIndexService threadIndexService;
     private final LogService logService;
+    private final TagService tagService;
+    private final ValidationService validationService; // nuevo
 
     public ForumPostOrchestrator(SimilarityService similarityService,
                                  ForumDuplicateService duplicateService,
                                  MetricsService metricsService,
                                  SpamService spamService,
                                  FeedbackService feedbackService,
-                                 ThreadIndexService threadIndexService, LogService logService) {
+                                 ThreadIndexService threadIndexService,
+                                 LogService logService,
+                                 TagService tagService,
+                                 ValidationService validationService) {
         this.similarityService = similarityService;
         this.duplicateService = duplicateService;
         this.metricsService = metricsService;
@@ -33,22 +38,29 @@ public class ForumPostOrchestrator {
         this.feedbackService = feedbackService;
         this.threadIndexService = threadIndexService;
         this.logService = logService;
+        this.tagService = tagService;
+        this.validationService = validationService;
     }
 
     public void processNewPost(ThreadChannel thread) {
 
         if (!(thread.getParentChannel() instanceof ForumChannel forum)) return;
 
+        // 1. Validar título antes de cualquier otra cosa
+        if (!validationService.tituloValido(thread.getName())) {
+            validationService.rechazarTituloPorLongitud(thread);
+            return;
+        }
+
+        // 2. Validar cooldown
         if (!spamService.permitidoEnForo(thread)) {
             feedbackService.mostrarCooldownEnForo(thread);
             return;
         }
 
-        // Usamos el índice en lugar de todos los threads del foro
-        List<ThreadChannel> candidatos = threadIndexService.findCandidates(thread.getName());
-
-        // Excluimos el hilo nuevo
-        candidatos = candidatos.stream()
+        // 3. Buscar duplicados
+        List<ThreadChannel> candidatos = threadIndexService.findCandidates(thread.getName())
+                .stream()
                 .filter(t -> !t.getId().equals(thread.getId()))
                 .toList();
 
@@ -58,22 +70,22 @@ public class ForumPostOrchestrator {
         );
 
         if (!matches.isEmpty()) {
-
             duplicateService.handleDuplicates(thread, matches);
 
             boolean soloExactos = matches.stream()
                     .allMatch(r -> r.type() == MatchType.EXACT);
 
+            logService.logForumCreated(thread);
             if (soloExactos) {
-                logService.logForumCreated(thread); // solo el log de creación
+                logService.logForumClosedExact(thread);
                 metricsService.incrementConfirmationRequested();
             } else {
-                logService.logForumCreated(thread);
                 metricsService.incrementThreadsCreated();
             }
 
         } else {
             threadIndexService.indexThread(thread);
+            tagService.aplicarTagInicial(thread);
             logService.logForumCreated(thread);
             metricsService.incrementThreadsCreated();
         }

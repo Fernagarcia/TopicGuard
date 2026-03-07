@@ -19,7 +19,7 @@ import net.dv8tion.jda.api.requests.GatewayIntent;
 
 public class BotConfig {
 
-    public static void start() throws Exception {
+    public static void start(){
 
         String token = System.getenv("DISCORD_TOKEN");
 
@@ -30,6 +30,7 @@ public class BotConfig {
         try {
             JDA jda = JDABuilder.createDefault(token)
                     .enableIntents(
+                            GatewayIntent.GUILD_MEMBERS,
                             GatewayIntent.GUILD_MESSAGES,
                             GatewayIntent.MESSAGE_CONTENT,
                             GatewayIntent.GUILD_MESSAGE_REACTIONS
@@ -60,10 +61,12 @@ public class BotConfig {
             ServerSettingsRepository settingsRepository = new ServerSettingsRepository();
             ServerSettingsService settingsService = new ServerSettingsService(settingsRepository);
             TemplateService templateService = new TemplateService();
+            ValidationService validationService = new ValidationService();
             MetricsService metricsService = new MetricsService();
             LogService logService = new LogService(jda, settingsService);
             DecisionService decisionService = new DecisionService(metricsService, logService);
             FeedbackService feedbackService = new FeedbackService();
+            TagService tagService = new TagService(settingsService);
 
             SpamService spamService = new SpamService(settingsService);
 
@@ -85,7 +88,9 @@ public class BotConfig {
                     spamService,
                     feedbackService,
                     threadIndexService,
-                    logService  // nuevo
+                    logService,
+                    tagService,
+                    validationService
             );
 
             MessageOrchestrator orchestrator =
@@ -108,6 +113,7 @@ public class BotConfig {
             );
 
             // ---------- Slash Commands ----------
+
             jda.updateCommands().addCommands(
                     Commands.slash("stats", "Muestra métricas del bot"),
                     Commands.slash("config", "Configuración del bot")
@@ -115,11 +121,12 @@ public class BotConfig {
                                     new SubcommandData("cooldown", "Tiempo mínimo entre publicaciones")
                                             .addOption(OptionType.INTEGER, "segundos", "Cooldown en segundos", true),
                                     new SubcommandData("logchannel", "Canal donde se registran los nuevos foros")
-                                            .addOption(OptionType.CHANNEL, "canal", "Canal de texto", true)
+                                            .addOption(OptionType.CHANNEL, "canal", "Canal de texto", true),
+                                    new SubcommandData("defaulttag", "Tag que se aplica al crear una publicación")
+                                            .addOption(OptionType.STRING, "tag", "Nombre del tag", true)
                             )
             ).queue();
 
-            // Poblar índice con threads existentes
             jda.getGuilds().forEach(guild ->
                     guild.getForumChannels().forEach(forum ->
                             forum.getThreadChannels().forEach(threadIndexService::indexThread)

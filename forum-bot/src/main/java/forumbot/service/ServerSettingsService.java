@@ -38,4 +38,13 @@ public class ServerSettingsService {
     public Optional<Long> getLogChannelId(long serverId) {
         return getOrCreate(serverId).getLogChannelId();
     }
+
+    public void setDefaultTag(long serverId, long tagId) {
+        getOrCreate(serverId).setDefaultTagId(tagId);
+        repository.saveAll(settings);
+    }
+
+    public Optional<Long> getDefaultTagId(long serverId) {
+        return getOrCreate(serverId).getDefaultTagId();
+    }
 }

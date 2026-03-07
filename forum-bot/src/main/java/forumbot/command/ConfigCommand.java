@@ -32,8 +32,41 @@ public class ConfigCommand extends ListenerAdapter {
         switch (subcommand) {
             case "cooldown" -> handleCooldown(event);
             case "logchannel" -> handleLogChannel(event);
+            case "defaulttag"  -> handleDefaultTag(event);
             // Futuros subcomandos se agregan aquí
         }
+    }
+
+    private void handleDefaultTag(SlashCommandInteractionEvent event) {
+        OptionMapping option = event.getOption("tag");
+        if (option == null) return;
+
+        // El admin escribe el nombre del tag y el bot busca su ID
+        String tagName = option.getAsString();
+        long serverId = event.getGuild().getIdLong();
+
+        // Buscamos el tag en todos los foros del servidor
+        event.getGuild().getForumChannels().stream()
+                .flatMap(forum -> forum.getAvailableTags().stream())
+                .filter(tag -> tag.getName().equalsIgnoreCase(tagName))
+                .findFirst()
+                .ifPresentOrElse(
+                        tag -> {
+                            try {
+                                settingsService.setDefaultTag(serverId, tag.getIdLong());
+                                event.reply("✅ Tag inicial configurado: **" + tag.getName() + "**")
+                                        .setEphemeral(true)
+                                        .queue();
+                            } catch (RuntimeException e) {
+                                event.reply("❌ No se pudo guardar la configuración, intentá de nuevo.")
+                                        .setEphemeral(true)
+                                        .queue();
+                            }
+                        },
+                        () -> event.reply("❌ No se encontró ningún tag con ese nombre en los foros del servidor.")
+                                .setEphemeral(true)
+                                .queue()
+                );
     }
 
     private void handleCooldown(SlashCommandInteractionEvent event) {
