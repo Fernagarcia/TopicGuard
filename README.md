@@ -30,6 +30,7 @@ TopicGuard/
 - Registra logs de creación y cierre de foros en un canal privado
 - Aplica cooldown configurable entre publicaciones por usuario
 - Indexa posts existentes para búsqueda eficiente de candidatos
+- Sistema de permisos por roles: los administradores pueden delegar moderación del bot a roles específicos
 
 ### Reply Bot (en desarrollo)
 - Respuestas automáticas basadas en intención del usuario
@@ -62,19 +63,33 @@ SIMILAR → votación del autor (30 min) → cierra o se mantiene
 NONE   → se indexa + se loguea
 ```
 
+## 🔐 Sistema de permisos
+
+TopicGuard implementa un sistema de permisos en capas:
+
+| Nivel | Quién | Puede hacer |
+|---|---|---|
+| Administrador Discord | Tiene permiso `ADMINISTRATOR` | Todo, sin restricciones |
+| Rol permitido | Tiene un rol en `allowedRoleIds` | Comandos de moderación: `cooldown`, `logchannel`, `defaulttag`, `stats` |
+| Usuario común | Cualquier otro miembro | Solo crear publicaciones |
+
+El comando `/config allowedrole` es exclusivo de administradores para evitar escalada de privilegios.
+
 ---
 
 ## ⚙️ Configuración
 
-El bot se configura mediante comandos slash con permisos de administrador:
+El bot se configura mediante comandos slash. Los comandos de configuración requieren permisos de administrador o rol permitido. La gestión de roles es exclusiva de administradores.
 
-| Comando | Descripción |
-|---|---|
-| `/config cooldown <segundos>` | Tiempo mínimo entre publicaciones por usuario |
-| `/config logchannel <canal>` | Canal privado donde se registran los logs |
-| `/stats` | Métricas del bot |
-
-La configuración se persiste en `data/server_settings.json` y se restaura automáticamente al reiniciar.
+| Comando | Permiso requerido | Descripción |
+|---|---|---|
+| `/config cooldown <segundos>` | Admin o rol permitido | Tiempo mínimo entre publicaciones por usuario |
+| `/config logchannel <canal>` | Admin o rol permitido | Canal privado donde se registran los logs |
+| `/config defaulttag <tag>` | Admin o rol permitido | Tag que se aplica automáticamente al crear una publicación |
+| `/config allowedrole add <rol>` | Solo administrador | Agrega un rol con permisos de moderación del bot |
+| `/config allowedrole remove <rol>` | Solo administrador | Remueve un rol con permisos de moderación |
+| `/config allowedrole list` | Solo administrador | Lista los roles con permisos configurados |
+| `/stats` | Admin o rol permitido | Métricas del bot |
 
 ---
 
