@@ -2,9 +2,12 @@ package forumbot.service;
 
 import forumbot.repository.ServerSettingsRepository;
 import forumbot.server.ServerSettings;
+import net.dv8tion.jda.api.Permission;
+import net.dv8tion.jda.api.entities.Member;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ServerSettingsService {
@@ -27,7 +30,7 @@ public class ServerSettingsService {
 
     public void setCooldown(long serverId, long cooldownMs) {
         getOrCreate(serverId).setThreadCooldownMs(cooldownMs);
-        repository.saveAll(settings); // persiste inmediatamente
+        repository.saveAll(settings);
     }
 
     public void setLogChannel(long serverId, long channelId) {
@@ -46,5 +49,31 @@ public class ServerSettingsService {
 
     public Optional<Long> getDefaultTagId(long serverId) {
         return getOrCreate(serverId).getDefaultTagId();
+    }
+
+    // ---------- Allowed Roles ----------
+
+    public void addAllowedRole(long serverId, long roleId) {
+        getOrCreate(serverId).addAllowedRole(roleId);
+        repository.saveAll(settings);
+    }
+
+    public void removeAllowedRole(long serverId, long roleId) {
+        getOrCreate(serverId).removeAllowedRole(roleId);
+        repository.saveAll(settings);
+    }
+
+    public Set<Long> getAllowedRoleIds(long serverId) {
+        return getOrCreate(serverId).getAllowedRoleIds();
+    }
+
+    public boolean canModerate(Member member, long serverId) {
+        if (member.hasPermission(Permission.ADMINISTRATOR)) return true;
+
+        Set<Long> allowed = getAllowedRoleIds(serverId);
+        if (allowed.isEmpty()) return false;
+
+        return member.getRoles().stream()
+                .anyMatch(role -> allowed.contains(role.getIdLong()));
     }
 }

@@ -40,9 +40,7 @@ public class MessageListener extends ListenerAdapter {
         if (!(event.getChannel() instanceof ThreadChannel thread)) return;
 
         if (thread.getParentChannel() instanceof ForumChannel) {
-            // Hilo creado desde un foro → ForumPostOrchestrator
             forumPostOrchestrator.processNewPost(thread);
-
         }
     }
 }

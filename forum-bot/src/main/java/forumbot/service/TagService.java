@@ -4,8 +4,10 @@ import net.dv8tion.jda.api.entities.channel.concrete.ForumChannel;
 import net.dv8tion.jda.api.entities.channel.forums.ForumTag;
 import net.dv8tion.jda.api.entities.channel.concrete.ThreadChannel;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 public class TagService {
 
@@ -31,9 +33,19 @@ public class TagService {
                 return;
             }
 
+            List<ForumTag> tagsActuales = thread.getAppliedTags();
+            boolean yaTieneElTag = tagsActuales.stream()
+                    .anyMatch(t -> t.getIdLong() == tagId);
+
+            if (yaTieneElTag) return;
+
+            List<ForumTag> tagsMergeados = new ArrayList<>(tagsActuales);
+            tagsMergeados.add(tag.get());
+
             thread.getManager()
-                    .setAppliedTags(List.of(tag.get()))
-                    .queue(
+                    .setAppliedTags(tagsMergeados)
+                    .queueAfter(
+                            1, TimeUnit.SECONDS,
                             null,
                             error -> System.err.println("[TagService] No se pudo aplicar tag: " + error.getMessage())
                     );

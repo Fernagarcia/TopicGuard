@@ -1,6 +1,7 @@
 [ {
   "serverId" : 1477713924768927776,
-  "cooldownMs" : 200000,
+  "cooldownMs" : 0,
   "logChannelId" : 1479462333209247785,
-  "defaultTagId" : 1479654033647210668
+  "defaultTagId" : 1479654033647210668,
+  "allowedRoleIds" : [ 1477713924768927777 ]
 } ]

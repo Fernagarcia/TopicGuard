@@ -16,6 +16,7 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.SubcommandData;
+import net.dv8tion.jda.api.interactions.commands.build.SubcommandGroupData;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 
 public class BotConfig {
@@ -130,6 +131,16 @@ public class BotConfig {
                                             .addOption(OptionType.CHANNEL, "canal", "Canal de texto", true),
                                     new SubcommandData("defaulttag", "Tag que se aplica al crear una publicación")
                                             .addOption(OptionType.STRING, "tag", "Nombre del tag", true)
+                            )
+                            .addSubcommandGroups(
+                                    new SubcommandGroupData("allowedrole", "Gestión de roles con permisos de moderación")
+                                            .addSubcommands(
+                                                    new SubcommandData("add", "Agrega un rol moderador")
+                                                            .addOption(OptionType.ROLE, "rol", "Rol a agregar", true),
+                                                    new SubcommandData("remove", "Remueve un rol moderador")
+                                                            .addOption(OptionType.ROLE, "rol", "Rol a remover", true),
+                                                    new SubcommandData("list", "Lista los roles con permisos")
+                                            )
                             )
             ).queue();
 

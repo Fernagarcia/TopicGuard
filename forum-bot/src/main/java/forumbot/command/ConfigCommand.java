@@ -6,6 +6,9 @@ import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEve
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
 public class ConfigCommand extends ListenerAdapter {
 
     private final ServerSettingsService settingsService;
@@ -18,22 +21,69 @@ public class ConfigCommand extends ListenerAdapter {
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
         if (!event.getName().equals("config")) return;
 
-        // Por ahora solo admins, en el futuro se puede verificar rol específico aquí
-        if (!event.getMember().hasPermission(Permission.ADMINISTRATOR)) {
+        String subcommand = event.getSubcommandName();
+        String group = event.getSubcommandGroup();
+
+        // Para allowedrole, la clave es el grupo
+        String commandKey = group != null ? group : subcommand;
+
+        boolean isAdminOnly = commandKey.equals("allowedrole");
+        boolean hasPermission = isAdminOnly
+                ? event.getMember().hasPermission(Permission.ADMINISTRATOR)
+                : settingsService.canModerate(event.getMember(), event.getGuild().getIdLong());
+
+        if (!hasPermission) {
             event.reply("❌ No tenés permisos para usar este comando.")
                     .setEphemeral(true)
                     .queue();
             return;
         }
 
-        String subcommand = event.getSubcommandName();
-        if (subcommand == null) return;
+        switch (commandKey) {
+            case "cooldown"     -> handleCooldown(event);
+            case "logchannel"   -> handleLogChannel(event);
+            case "defaulttag"   -> handleDefaultTag(event);
+            case "allowedrole"  -> handleAllowedRole(event);
+        }
+    }
 
-        switch (subcommand) {
-            case "cooldown" -> handleCooldown(event);
-            case "logchannel" -> handleLogChannel(event);
-            case "defaulttag"  -> handleDefaultTag(event);
-            // Futuros subcomandos se agregan aquí
+    private void handleAllowedRole(SlashCommandInteractionEvent event) {
+        String group = event.getSubcommandName(); // "add", "remove", "list"
+        long serverId = event.getGuild().getIdLong();
+
+        switch (group != null ? group : "") {
+            case "add" -> {
+                OptionMapping option = event.getOption("rol");
+                if (option == null) return;
+                long roleId = option.getAsRole().getIdLong();
+                String roleName = option.getAsRole().getName();
+                settingsService.addAllowedRole(serverId, roleId);
+                event.reply("✅ Rol **%s** agregado como moderador del bot.".formatted(roleName))
+                        .setEphemeral(true).queue();
+            }
+            case "remove" -> {
+                OptionMapping option = event.getOption("rol");
+                if (option == null) return;
+                long roleId = option.getAsRole().getIdLong();
+                String roleName = option.getAsRole().getName();
+                settingsService.removeAllowedRole(serverId, roleId);
+                event.reply("✅ Rol **%s** removido.".formatted(roleName))
+                        .setEphemeral(true).queue();
+            }
+            case "list" -> {
+                Set<Long> roles = settingsService.getAllowedRoleIds(serverId);
+                if (roles.isEmpty()) {
+                    event.reply("📋 No hay roles configurados. Solo los administradores pueden usar el bot.")
+                            .setEphemeral(true).queue();
+                } else {
+                    String lista = roles.stream()
+                            .map(id -> "<@&%d>".formatted(id))
+                            .collect(Collectors.joining("\n"));
+                    event.reply("📋 **Roles con permisos de moderación:**\n" + lista)
+                            .setEphemeral(true).queue();
+                }
+            }
+            default -> event.reply("❌ Acción no reconocida.").setEphemeral(true).queue();
         }
     }
 

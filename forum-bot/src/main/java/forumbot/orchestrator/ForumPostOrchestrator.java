@@ -69,6 +69,8 @@ public class ForumPostOrchestrator {
                 candidatos
         );
 
+        tagService.aplicarTagInicial(thread);
+
         if (!matches.isEmpty()) {
             duplicateService.handleDuplicates(thread, matches);
 
@@ -85,7 +87,6 @@ public class ForumPostOrchestrator {
 
         } else {
             threadIndexService.indexThread(thread);
-            tagService.aplicarTagInicial(thread);
             logService.logForumCreated(thread);
             metricsService.incrementThreadsCreated();
         }

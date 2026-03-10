@@ -6,11 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class ServerSettingsRepository {
 
-    private static final String FILE_PATH = "data/server_settings.json";
+    private static final String FILE_PATH = "forum-bot/data/server_settings.json";
     private final ObjectMapper mapper = new ObjectMapper();
 
     public Map<Long, ServerSettings> loadAll() {
@@ -26,7 +28,11 @@ public class ServerSettingsRepository {
                 ServerSettings s = new ServerSettings(d.serverId);
                 s.setThreadCooldownMs(d.cooldownMs);
                 s.setLogChannelId(d.logChannelId);
-                s.setDefaultTagId(d.defaultTagId); // nuevo
+                s.setDefaultTagId(d.defaultTagId);
+
+                if (d.allowedRoleIds != null) {
+                    d.allowedRoleIds.forEach(s::addAllowedRole);
+                }
                 result.put(d.serverId, s);
             }
 
@@ -50,7 +56,8 @@ public class ServerSettingsRepository {
                             s.getServerId(),
                             s.getThreadCooldownMs(),
                             s.getLogChannelId().orElse(null),
-                            s.getDefaultTagId().orElse(null) // nuevo
+                            s.getDefaultTagId().orElse(null),
+                            new HashSet<>(s.getAllowedRoleIds()) // serializa los roles
                     ))
                     .toArray(ServerSettingsData[]::new);
 
@@ -62,20 +69,24 @@ public class ServerSettingsRepository {
             throw new RuntimeException("No se pudo persistir la configuración", e);
         }
     }
+
     public static class ServerSettingsData {
         public long serverId;
         public long cooldownMs;
         public Long logChannelId;
-        public Long defaultTagId; // nuevo
+        public Long defaultTagId;
+        public Set<Long> allowedRoleIds; // nuevo
 
         public ServerSettingsData() {}
 
         public ServerSettingsData(long serverId, long cooldownMs,
-                                  Long logChannelId, Long defaultTagId) {
+                                  Long logChannelId, Long defaultTagId,
+                                  Set<Long> allowedRoleIds) {
             this.serverId = serverId;
             this.cooldownMs = cooldownMs;
             this.logChannelId = logChannelId;
             this.defaultTagId = defaultTagId;
+            this.allowedRoleIds = allowedRoleIds;
         }
     }
 }
